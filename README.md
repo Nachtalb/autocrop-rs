@@ -59,47 +59,6 @@ with or without AVX2. It stays in `.cargo/config.toml` because it costs
 nothing on the build machine, but the portable build is just as fast. At
 this point JPEG decoding is the larger cost, not the detector.
 
-### Where the decode time goes
-
-The showcase file is a *progressive* JPEG with 4:2:0 chroma subsampling,
-which is the slow path of every JPEG decoder: all scans have to be
-accumulated into a full coefficient buffer before a single block can be
-transformed, so the data is walked several times. Re-encoding the same
-1194 x 2560 pixels in other formats and decoding them with the `image`
-crate (median of five runs, `autocrop --time`, native build):
-
-| file | size | decode | detect |
-|---|---|---|---|
-| JPEG, progressive, 4:2:0 (the original) | 247 KB | 17.8 ms | 11.2 ms |
-| JPEG, baseline, 4:4:4, q90 | 357 KB | 9.7 ms | 11.4 ms |
-| PNG | 1430 KB | 13.0 ms | 11.0 ms |
-| WebP, lossy q90 | 187 KB | 32.7 ms | 10.7 ms |
-| WebP, lossless | 941 KB | 22.5 ms | 11.4 ms |
-| BMP (uncompressed) | 8960 KB | 21.0 ms | 10.8 ms |
-| JPEG, baseline, resized to 373 x 800 | 53 KB | 1.1 ms | 5.7 ms |
-| PNG, resized to 373 x 800 | 203 KB | 1.6 ms | 5.9 ms |
-
-Pillow (Python) lands in the same order: baseline JPEG 13 ms, progressive
-22 ms, PNG 25 ms, WebP 37 ms, BMP 14 ms.
-
-What this says:
-
-- A baseline JPEG decodes at roughly 300 megapixels per second on one
-  core, which is close to what libjpeg-turbo does. Entropy decoding is a
-  serial bit stream, then every 8x8 block needs an inverse DCT, chroma
-  upsampling and a YCbCr to RGB conversion; three megapixels of that
-  simply take ten milliseconds. Progressive doubles it.
-- No container format wins big at full resolution. WebP is the slowest
-  in both libraries, PNG's inflate is comparable to JPEG, and BMP pays
-  for reading nine megabytes.
-- Pixel count is the only lever that matters. The detector works on an
-  800 px copy anyway, so decoding at that size makes decode plus detect
-  about 7 ms instead of 29 ms. In a search pipeline that already keeps
-  thumbnails, run the detector on those. For raw JPEGs, a decoder with
-  DCT-domain scaling (libjpeg-turbo's `scale 1/2`, `1/4` via the
-  `turbojpeg` crate) produces the small image directly from the
-  coefficients without ever materialising the full-size pixels;
-  `zune-jpeg` does not offer that.
 
 ## Usage
 
