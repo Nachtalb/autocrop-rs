@@ -2,6 +2,7 @@
 
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
+use std::time::Instant;
 
 use autocrop::{Params, RgbImage, find_crop};
 
@@ -11,6 +12,7 @@ struct Args {
     inputs: Vec<PathBuf>,
     out: PathBuf,
     all: bool,
+    time: bool,
 }
 
 fn parse_args() -> Result<Args, lexopt::Error> {
@@ -18,15 +20,18 @@ fn parse_args() -> Result<Args, lexopt::Error> {
     let mut inputs = Vec::new();
     let mut out = PathBuf::from("out/crops");
     let mut all = false;
+    let mut time = false;
     let mut parser = lexopt::Parser::from_env();
     while let Some(arg) = parser.next()? {
         match arg {
             Short('o') | Long("out") => out = PathBuf::from(parser.value()?),
             Long("all") => all = true,
+            Long("time") => time = true,
             Short('h') | Long("help") => {
-                println!("usage: autocrop <files or folders>... [--out DIR] [--all]");
+                println!("usage: autocrop <files or folders>... [--out DIR] [--all] [--time]");
                 println!("  --out DIR   folder for cropped images (default out/crops)");
                 println!("  --all       also write images that were not cropped");
+                println!("  --time      print decode and detect time per image");
                 std::process::exit(0);
             }
             Value(v) => inputs.push(PathBuf::from(v)),
@@ -36,7 +41,12 @@ fn parse_args() -> Result<Args, lexopt::Error> {
     if inputs.is_empty() {
         return Err("at least one input file or folder is required".into());
     }
-    Ok(Args { inputs, out, all })
+    Ok(Args {
+        inputs,
+        out,
+        all,
+        time,
+    })
 }
 
 fn is_image(path: &Path) -> bool {
@@ -71,8 +81,11 @@ fn run(args: &Args) -> Result<(), Box<dyn std::error::Error>> {
     let params = Params::default();
     let (mut count, mut cropped) = (0, 0);
     for path in iter_images(&args.inputs) {
+        let t0 = Instant::now();
         let img = RgbImage::load(&path)?;
+        let t1 = Instant::now();
         let result = find_crop(&img, &params);
+        let t2 = Instant::now();
         count += 1;
         let name = path
             .file_name()
@@ -83,6 +96,15 @@ fn run(args: &Args) -> Result<(), Box<dyn std::error::Error>> {
             "{name}: {} score={:.2} box={boxed:?}",
             result.reason, result.score
         );
+        if args.time {
+            println!(
+                "  decode {:.1} ms, detect {:.1} ms ({}x{})",
+                (t1 - t0).as_secs_f64() * 1000.0,
+                (t2 - t1).as_secs_f64() * 1000.0,
+                img.width,
+                img.height
+            );
+        }
         if let Some(rect) = &result.rect {
             cropped += 1;
             img.crop(rect).save(args.out.join(&name))?;

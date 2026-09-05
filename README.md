@@ -19,24 +19,56 @@ cargo build --release
 The release profile uses fat LTO, a single codegen unit, `panic = "abort"`
 and symbol stripping. `.cargo/config.toml` adds `-C target-cpu=native`, so a
 binary built here only runs on CPUs at least as new as the build machine.
-Remove that file for a portable build. The stripped `autocrop` binary is
-about 1.2 MB and links only `image` (JPEG, PNG, WebP, GIF, BMP decoders),
-`lexopt` and `serde_json`.
+Remove that file for a portable build, or override it for one build with
+`cargo build --release --config 'build.rustflags=[]'`; see the timing table
+above for why the portable build loses nothing. The stripped `autocrop`
+binary is about 1.2 MB and links only `image` (JPEG, PNG, WebP, GIF, BMP
+decoders), `lexopt` and `serde_json`.
+
+## Example
+
+The same showcase image as the Python project: a phone screenshot of a tweet
+with an embedded stream clip (`docs/example.jpg`, 1194 x 2560). The crop
+(`docs/example_crop.jpg`, 1194 x 670) is pixel-identical in position to the
+Python result. The overlay on the right comes from the Python tool's
+`--debug` mode (the Rust CLI has no overlay renderer).
+
+| input | crop | debug overlay (Python) |
+|---|---|---|
+| ![input](docs/example.jpg) | ![crop](docs/example_crop.jpg) | ![debug](docs/example_debug_python.png) |
+
+```
+$ autocrop docs/example.jpg --out out --time
+example.jpg: chrome score=0.86 box=Some((0, 822, 1194, 1492))
+  decode 16.6 ms, detect 11.0 ms (1194x2560)
+```
+
+Timing on that image, median of three runs on the same machine:
+
+| stage | Python (`uv run autocrop --time`) | Rust, `target-cpu=native` | Rust, generic x86-64 |
+|---|---|---|---|
+| JPEG decode | 27 ms (Pillow) | 16.6 ms (`image`) | 16.4 ms |
+| detector (downscale + analysis) | 50 ms | 11.0 ms | 10.7 ms |
+| total | 77 ms | 27.6 ms | 27.1 ms |
+
+On the whole sample set (`autocrop-eval`, detector only) the native build
+averages 9.5 ms per image and the generic build 9.7 ms, three runs each. The
+`-C target-cpu=native` flag buys nothing here: the hot loops work on `u8` and
+`bool` values with data-dependent branches, which LLVM vectorises poorly
+with or without AVX2. It stays in `.cargo/config.toml` because it costs
+nothing on the build machine, but the portable build is just as fast. At
+this point JPEG decoding is the larger cost, not the detector.
 
 ## Usage
 
 ```
-autocrop <files or folders>... [--out DIR] [--all]
+autocrop <files or folders>... [--out DIR] [--all] [--time]
 autocrop-eval [--samples DIR] [--ground-truth FILE] [--explain NAME]...
 ```
 
 `autocrop` writes each cropped image under `--out` (default `out/crops`) with
-its original name and prints one line per file:
-
-```
-$ autocrop docs/example.jpg --out out
-example.jpg: chrome score=0.86 box=Some((0, 822, 1194, 1492))
-```
+its original name (so do not point `--out` at the input folder) and prints
+one line per file; `--time` adds decode and detect times.
 
 `autocrop-eval` needs the labelled sample set and the `ground_truth.json`
 written by the Python harness (defaults: `../Samples` and
