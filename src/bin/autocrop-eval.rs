@@ -1,8 +1,7 @@
 //! `autocrop-eval`: run the detector over the labelled sample set and report metrics.
 //!
 //! Ground-truth boxes (`eval/ground_truth.json`) were recovered by template
-//! matching the manual crops into the originals; the Python prototype used the
-//! same file, so both implementations are measured against identical targets.
+//! matching the manual crops into the originals.
 
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};

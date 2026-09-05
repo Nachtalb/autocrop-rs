@@ -1,38 +1,20 @@
-# autocrop (Rust)
+# autocrop
 
-Screenshot content-rectangle detector: it finds the photo, video frame or
-game viewport inside a screenshot and crops away letterbox bars, phone and
-desktop chrome and meme text. Images that are not screenshots (photos, art,
-manga pages) are left untouched.
+[![crates.io](https://img.shields.io/crates/v/autocrop.svg)](https://crates.io/crates/autocrop)
+[![PyPI](https://img.shields.io/pypi/v/autocrop-rs.svg)](https://pypi.org/project/autocrop-rs/)
+[![CI](https://github.com/Nachtalb/autocrop-rs/actions/workflows/ci.yml/badge.svg)](https://github.com/Nachtalb/autocrop-rs/actions/workflows/ci.yml)
 
-Ships as a Rust library, two command line tools and Python bindings
-(`pip install autocrop-rs`). The algorithm was developed in the archived
-Python prototype [Nachtalb/autocrop](https://github.com/Nachtalb/autocrop)
-and this crate reproduces its results on the same ground-truth boxes.
-
-## Build
-
-```
-cargo build --release
-```
-
-The release profile uses fat LTO, a single codegen unit, `panic = "abort"`
-and symbol stripping. The stripped `autocrop` binary is about 1.2 MB and
-links only `image` (JPEG, PNG, WebP, GIF, BMP decoders), `lexopt` and
-`serde_json`. Prebuilt binaries for Linux, macOS and Windows are attached to
-each GitHub release; the Python bindings are on PyPI as `autocrop-rs`.
+Finds the actual content inside a screenshot and crops away letterbox bars, app chrome and meme text, while leaving photos, art and manga pages untouched.
 
 ## Example
 
-A phone screenshot of a tweet
-with an embedded stream clip (`docs/example.jpg`, 1194 x 2560). The crop
-(`docs/example_crop.jpg`, 1194 x 670) is pixel-identical in position to the
-Python result. The overlay on the right was rendered by the Python prototype's
-`--debug` mode (the Rust CLI has no overlay renderer).
+A phone screenshot of a tweet with an embedded stream clip (1194 x 2560), the
+crop `autocrop` writes (1194 x 670), and a debug overlay showing the row and
+column profiles the detector works from together with the chosen box.
 
-| input | crop | debug overlay (Python) |
+| input | crop | debug overlay |
 |---|---|---|
-| <img src="docs/example.jpg" width="220" alt="input"> | <img src="docs/example_crop.jpg" width="220" alt="crop"> | <img src="docs/example_debug_python.png" width="220" alt="debug overlay"> |
+| <img src="docs/example.jpg" width="220" alt="input"> | <img src="docs/example_crop.jpg" width="220" alt="crop"> | <img src="docs/example_debug.png" width="220" alt="debug overlay"> |
 
 ```
 $ autocrop docs/example.jpg --out out --time
@@ -40,46 +22,27 @@ example.jpg: chrome score=0.86 box=Some((0, 822, 1194, 1492))
   decode 16.6 ms, detect 11.0 ms (1194x2560)
 ```
 
-Timing on that image, median of three runs on the same machine:
-
-| stage | Python prototype | Rust |
-|---|---|---|
-| JPEG decode | 27 ms (Pillow) | 16.6 ms (`image`) |
-| detector (downscale + analysis) | 50 ms | 11.0 ms |
-| total | 77 ms | 27.6 ms |
-
-On the whole sample set (`autocrop-eval`, detector only) the release build
-averages 9.5 ms per image. Building with `-C target-cpu=native` was measured
-and changes nothing: the hot loops work on `u8` and `bool` values with
-data-dependent branches, which LLVM vectorises poorly with or without AVX2,
-so the portable build is what gets shipped. At this point JPEG decoding is
-the larger cost, not the detector.
-
-
 ## Usage
+
+### Install
+
+- Prebuilt binaries for Linux, macOS and Windows are attached to every
+  [GitHub release](https://github.com/Nachtalb/autocrop-rs/releases).
+- From source: `cargo install autocrop`.
+- Python: `pip install autocrop-rs` (or `uv add autocrop-rs`).
+
+### Command line
 
 ```
 autocrop <files or folders>... [--out DIR] [--all] [--time]
-autocrop-eval [--samples DIR] [--ground-truth FILE] [--explain NAME]...
 ```
 
-`autocrop` writes each cropped image under `--out` (default `out/crops`) with
-its original name (so do not point `--out` at the input folder) and prints
-one line per file; `--time` adds decode and detect times.
+Writes each cropped image under `--out` (default `out/crops`) with its
+original name, so do not point `--out` at the input folder. One line per file
+tells you the decision, its score and the box; `--all` also copies images that
+were not cropped, `--time` adds decode and detect times.
 
-`autocrop-eval` needs the labelled sample set (default `../Samples`, not part
-of the repository) and the ground-truth boxes in `eval/ground_truth.json`,
-which were recovered by template-matching the manual crops into the
-originals. `--explain NAME` prints the background
-estimate, the bar-trim result, the candidate lines and the full score
-breakdown of the best rectangle and of the ground-truth rectangle.
-
-From Python: the `python/` folder holds PyO3 bindings (`import autocrop_rs`)
-with `detect_file`, `detect_bytes`, `detect_array` (numpy), `crop_file`,
-`crop_bytes` and `crop_bytes_to_file`;
-see `python/README.md`.
-
-From Rust:
+### Rust
 
 ```rust
 use autocrop::{Params, crop_image, find_crop};
@@ -88,7 +51,30 @@ let (image, result) = crop_image("screenshot.jpg", &Params::default())?;
 let result = find_crop(&rgb_image, &Params::default()); // CropResult { rect, score, reason }
 ```
 
-## Algorithm
+`result.rect` is the crop in original pixel coordinates or `None`;
+`result.reason` names the stage that decided (`letterbox`, `chrome`,
+`no-crop`, `no-crop:grayscale-light`, ...).
+
+### Python
+
+```python
+import autocrop_rs
+
+result = autocrop_rs.detect_file("screenshot.jpg")
+if result:                       # truthy when a crop was found
+    x0, y0, x1, y1 = result.box
+
+result, png = autocrop_rs.crop_bytes(data)                       # bytes in, PNG bytes out
+result, jpg = autocrop_rs.crop_bytes(data, format="jpeg", quality=85)
+autocrop_rs.crop_bytes_to_file(data, "out/screenshot.webp")     # format by extension
+autocrop_rs.detect_array(numpy_hxwx3_uint8)                      # already decoded pixels
+```
+
+All calls release the GIL. Every detector threshold is available as a keyword
+on `autocrop_rs.Params`. See [python/README.md](python/README.md) for the
+full API.
+
+## How it works
 
 All work happens on a copy downscaled to at most 800 px on the long side;
 the box is mapped back to original coordinates at the end.
@@ -132,9 +118,28 @@ the box is mapped back to original coordinates at the end.
    images whose outside region is light are never cropped (manga pages).
    A bar-trim result whose interior is mostly background is discarded.
 
-Every threshold lives in `autocrop::Params` with a doc comment.
+Every threshold lives in `autocrop::Params` with a doc comment. The whole
+pipeline is plain integer and float arithmetic over a few masks and prefix
+sums; there is no Canny, no Hough and no machine learning.
 
-## Known limitations
+## Results
+
+Labelled sample set of 20 screenshots with manual crops and 12
+non-screenshots, release build:
+
+| metric | value |
+|---|---|
+| positives with IoU >= 0.85 | 20 / 20 |
+| mean IoU on positives | 0.979 |
+| false crops on negatives | 0 / 12 |
+| detector time per image (800 px working copy) | ~9.5 ms |
+
+The detector is not the bottleneck: on the example above decoding the
+progressive JPEG takes 16.6 ms against 11 ms for detection. Building with
+`-C target-cpu=native` was measured and changes nothing, so the portable
+build is what ships.
+
+## Limitations
 
 - A caption box or text line that touches the content with no background
   gap between them is treated as part of the content.
@@ -147,43 +152,18 @@ Every threshold lives in `autocrop::Params` with a doc comment.
 - Only one rectangle is returned; collages and stacked frames are left as
   they are.
 
-## Results
-
-Labelled sample set of 20 screenshots with manual crops and 12
-non-screenshots, release build, compared with the Python prototype:
-
-| metric | Rust | Python |
-|---|---|---|
-| positives with IoU >= 0.85 | 20 / 20 | 20 / 20 |
-| mean IoU on positives | 0.979 | 0.980 |
-| false crops on negatives | 0 / 12 | 0 / 12 |
-| detector time per image (800 px working copy) | ~9.5 ms | ~55 ms |
-
-Boxes differ from the Python prototype by at most a few pixels, which comes
-from the area-averaging downscale being implemented independently.
-
-## Layout
-
-| file | role |
-|---|---|
-| `src/params.rs` | every threshold, with docs, `Params::default()` |
-| `src/image.rs` | RGB container, decode/encode, box downscale, colour distance |
-| `src/profiles.rs` | background estimation, row/column profiles, integral images |
-| `src/letterbox.rs` | flat bar trimming |
-| `src/chrome.rs` | candidate lines and the scored rectangle search |
-| `src/detector.rs` | `analyze`, `find_crop`, `crop_image` |
-| `src/bin/autocrop.rs` | CLI |
-| `src/bin/autocrop-eval.rs` | evaluation and `--explain` diagnostics |
-| `tests/synthetic.rs` | end-to-end tests on generated layouts |
-
-Quality gate: `cargo fmt --check`, `cargo clippy --all-targets` (pedantic,
-warning free), `cargo test`.
-
-`examples/decode_bench.rs` compares the `image` crate's decoders with
-libjpeg-turbo, including its DCT-domain 1/2, 1/4 and 1/8 scaled decode, and
-runs the detector on each output. It needs the optional `turbojpeg` feature,
-which builds libjpeg-turbo from source (cmake, nasm and a C compiler):
+## Building
 
 ```
-cargo run --release --features turbojpeg --example decode_bench -- FILE...
+cargo build --release
 ```
+
+The release profile uses fat LTO, a single codegen unit, `panic = "abort"`
+and symbol stripping. The stripped `autocrop` binary is about 1.2 MB and
+links only `image` (JPEG, PNG, WebP, GIF, BMP decoders), `lexopt` and
+`serde_json`. Development notes, layout and the release process are in
+[CLAUDE.md](CLAUDE.md) and [RELEASING.md](RELEASING.md).
+
+## License
+
+MIT, see [LICENSE](LICENSE).

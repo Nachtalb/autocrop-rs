@@ -1,8 +1,8 @@
-# autocrop-rs (Python bindings)
+# autocrop-rs
 
-Python bindings for the Rust `autocrop` detector, built with PyO3 and
-maturin. The extension module is called `autocrop_rs` so it does not clash
-with the pure-Python reference package `autocrop`.
+Python bindings for the `autocrop` screenshot content-rectangle detector,
+built with PyO3 and maturin. The package installs as `autocrop-rs` and
+imports as `autocrop_rs`.
 
 ## Build and test
 
