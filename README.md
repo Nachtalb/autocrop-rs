@@ -21,7 +21,7 @@ and symbol stripping. `.cargo/config.toml` adds `-C target-cpu=native`, so a
 binary built here only runs on CPUs at least as new as the build machine.
 Remove that file for a portable build, or override it for one build with
 `cargo build --release --config 'build.rustflags=[]'`; see the timing table
-above for why the portable build loses nothing. The stripped `autocrop`
+below for why the portable build loses nothing. The stripped `autocrop`
 binary is about 1.2 MB and links only `image` (JPEG, PNG, WebP, GIF, BMP
 decoders), `lexopt` and `serde_json`.
 
