@@ -19,6 +19,10 @@ classifiers = [
     "Topic :: Multimedia :: Graphics",
 ]
 
+[project.scripts]
+autocrop-rs = "autocrop_rs:main"
+autocrop = "autocrop_rs:main"
+
 [project.urls]
 Homepage = "https://github.com/Nachtalb/autocrop-rs"
 Repository = "https://github.com/Nachtalb/autocrop-rs"

@@ -27,9 +27,12 @@ example.jpg: chrome score=0.86 box=Some((0, 822, 1194, 1492))
 ### Install
 
 - Prebuilt binaries for Linux, macOS and Windows are attached to every
-  [GitHub release](https://github.com/Nachtalb/autocrop-rs/releases).
+  [GitHub release](https://github.com/Nachtalb/autocrop-rs/releases);
+  `cargo binstall autocrop` fetches the right one for your machine.
 - From source: `cargo install autocrop`.
-- Python: `pip install autocrop-rs` (or `uv add autocrop-rs`).
+- Python: `pip install autocrop-rs` (or `uv add autocrop-rs`). The wheel also
+  carries the command line, so `uvx autocrop-rs screenshot.jpg` runs it
+  without installing anything.
 
 ### Command line
 

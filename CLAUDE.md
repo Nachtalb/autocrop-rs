@@ -14,12 +14,12 @@ describes the algorithm; this file is about the code.
 | `src/letterbox.rs` | step 3, flat bar trimming |
 | `src/chrome.rs` | step 4, candidate lines and the scored rectangle search |
 | `src/detector.rs` | `analyze`, `find_crop`, `crop_image` |
-| `src/bin/autocrop.rs` | CLI |
-| `src/bin/autocrop-eval.rs` | evaluation against `eval/ground_truth.json`, `--explain` diagnostics |
+| `src/cli.rs` | the command line, shared by the binary and the Python entry point |
+| `src/bin/autocrop.rs` | binary wrapper around `cli::run` |
+| `src/bin/autocrop-eval.rs` | evaluation against a labelled sample set, `--explain` diagnostics |
 | `tests/synthetic.rs` | end-to-end tests on generated layouts |
 | `examples/decode_bench.rs` | `image` crate vs libjpeg-turbo decode benchmark (optional `turbojpeg` feature) |
 | `python/` | PyO3 bindings, module `autocrop_rs`, own `pyproject.toml` and tests |
-| `eval/ground_truth.json` | manual-crop boxes for the sample set, recovered by template matching |
 | `docs/` | showcase images used by the README |
 
 The workspace has `default-members = ["."]`, so plain `cargo build` and
@@ -51,12 +51,13 @@ on stable Rust. Local nightly clippy is more lenient than stable in places
 
 ## Evaluation
 
-`autocrop-eval` needs the labelled sample set at `../Samples` relative to
-the repository (folders `screenshots`, `screenshots cropped approximated`,
-`not screenshots`); it is private and not committed. Ground truth lives in
-the repository. `--explain "screenshot 3.jpg"` prints every measurement for
-one sample including the ground-truth rectangle's scores, which is the
-fastest way to see which gate rejects a correct box.
+`autocrop-eval --samples DIR` needs the labelled sample set (folders
+`screenshots` and `not screenshots`, plus `ground_truth.json` with the manual
+crop boxes, recovered by template matching). The set is private and not
+committed; it lives at `../Samples` next to the repository on the development
+machine. `--explain "screenshot 3.jpg"` prints every measurement for one
+sample including the ground-truth rectangle's scores, which is the fastest
+way to see which gate rejects a correct box.
 
 Acceptance bar: 0 false crops on the negatives, at least 18/20 positives at
 IoU >= 0.85. Current: 20/20, mean IoU 0.979.
@@ -78,5 +79,7 @@ JPEGs. The default build stays pure Rust.
 - No `target-cpu=native`: prebuilt binaries must be portable, and it was
   measured to change nothing.
 - Commit messages: plain, no generated attribution trailers.
+- The `python/` wheel exposes the CLI as console scripts (`autocrop-rs`,
+  `autocrop`) via `autocrop_rs.main`, so `uvx autocrop-rs` works.
 - Releases are tags; see `RELEASING.md`. Versions must match in
   `Cargo.toml`, `python/Cargo.toml` and `python/pyproject.toml`.

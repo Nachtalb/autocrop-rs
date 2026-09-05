@@ -19,6 +19,7 @@
 use turbojpeg as _;
 
 pub mod chrome;
+pub mod cli;
 pub mod detector;
 pub mod geometry;
 pub mod image;

@@ -56,3 +56,9 @@ def crop_bytes_to_file(
     data: bytes, out_path: str | PathLike[str], params: Params | None = None
 ) -> CropResult:
     """Detect on encoded image bytes and write the crop to ``out_path`` (format by extension)."""
+
+def main(argv: list[str] | None = None) -> int:
+    """Run the ``autocrop`` command line on ``argv`` (default ``sys.argv[1:]``).
+
+    Returns the exit code.
+    """

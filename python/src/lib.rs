@@ -321,6 +321,26 @@ fn crop_bytes_to_file(
     Ok(to_result(result))
 }
 
+/// Command line entry point (`autocrop-rs` console script).
+///
+/// Runs the same CLI as the Rust binary on `argv` (without the program name);
+/// defaults to `sys.argv[1:]`. Returns the exit code.
+#[pyfunction]
+#[pyo3(signature = (argv=None))]
+fn main(py: Python<'_>, argv: Option<Vec<String>>) -> PyResult<i32> {
+    let cli_args = match argv {
+        Some(a) => a,
+        None => py
+            .import("sys")?
+            .getattr("argv")?
+            .extract::<Vec<String>>()?
+            .into_iter()
+            .skip(1)
+            .collect(),
+    };
+    Ok(py.detach(move || autocrop::cli::run(cli_args)))
+}
+
 /// Native module entry point.
 #[pymodule]
 fn autocrop_rs(m: &Bound<'_, PyModule>) -> PyResult<()> {
@@ -332,6 +352,7 @@ fn autocrop_rs(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(crop_file, m)?)?;
     m.add_function(wrap_pyfunction!(crop_bytes, m)?)?;
     m.add_function(wrap_pyfunction!(crop_bytes_to_file, m)?)?;
+    m.add_function(wrap_pyfunction!(main, m)?)?;
     m.add("__version__", env!("CARGO_PKG_VERSION"))?;
     Ok(())
 }

@@ -1,7 +1,8 @@
 //! `autocrop-eval`: run the detector over the labelled sample set and report metrics.
 //!
-//! Ground-truth boxes (`eval/ground_truth.json`) were recovered by template
-//! matching the manual crops into the originals.
+//! The sample set is not part of the repository. `--samples DIR` points at a
+//! folder with `screenshots/` and `not screenshots/` subfolders and a
+//! `ground_truth.json` mapping each screenshot name to its manual crop box.
 
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
@@ -30,25 +31,33 @@ struct Args {
 
 fn parse_args() -> Result<Args, lexopt::Error> {
     use lexopt::prelude::*;
-    let here = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let mut samples = here.join("..").join("Samples");
-    let mut ground_truth = here.join("eval").join("ground_truth.json");
+    let mut samples: Option<PathBuf> = None;
+    let mut ground_truth: Option<PathBuf> = None;
     let mut explain = Vec::new();
     let mut parser = lexopt::Parser::from_env();
     while let Some(arg) = parser.next()? {
         match arg {
-            Long("samples") => samples = PathBuf::from(parser.value()?),
-            Long("ground-truth") => ground_truth = PathBuf::from(parser.value()?),
+            Long("samples") => samples = Some(PathBuf::from(parser.value()?)),
+            Long("ground-truth") => ground_truth = Some(PathBuf::from(parser.value()?)),
             Long("explain") => explain.push(parser.value()?.to_string_lossy().into_owned()),
             Short('h') | Long("help") => {
                 println!(
-                    "usage: autocrop-eval [--samples DIR] [--ground-truth FILE] [--explain NAME]..."
+                    "usage: autocrop-eval --samples DIR [--ground-truth FILE] [--explain NAME]..."
                 );
+                println!("  --samples DIR        folder with screenshots/ and not screenshots/");
+                println!(
+                    "  --ground-truth FILE  manual crop boxes (default DIR/ground_truth.json)"
+                );
+                println!("  --explain NAME       print every measurement for one sample");
                 std::process::exit(0);
             }
             _ => return Err(arg.unexpected()),
         }
     }
+    let Some(samples) = samples else {
+        return Err("--samples DIR is required".into());
+    };
+    let ground_truth = ground_truth.unwrap_or_else(|| samples.join("ground_truth.json"));
     Ok(Args {
         samples,
         ground_truth,

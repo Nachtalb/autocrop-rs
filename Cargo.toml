@@ -10,6 +10,18 @@ keywords = ["image", "crop", "screenshot", "detection", "vision"]
 categories = ["multimedia::images", "computer-vision", "command-line-utilities"]
 exclude = ["docs/", "python/", ".github/", "out/", "RELEASING.md"]
 
+# `cargo binstall autocrop` downloads the matching GitHub release asset instead of compiling.
+[package.metadata.binstall]
+pkg-url = "{ repo }/releases/download/v{ version }/{ name }-{ version }-{ target }{ archive-suffix }"
+bin-dir = "{ name }-{ version }-{ target }/{ bin }{ binary-ext }"
+pkg-fmt = "tgz"
+
+[package.metadata.binstall.overrides.x86_64-pc-windows-msvc]
+pkg-fmt = "zip"
+
+[package.metadata.binstall.overrides.aarch64-pc-windows-msvc]
+pkg-fmt = "zip"
+
 [workspace]
 members = ["python"]
 default-members = ["."]

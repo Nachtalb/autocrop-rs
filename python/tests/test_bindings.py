@@ -142,3 +142,13 @@ def test_crop_bytes_to_file(tmp_path: Path) -> None:
     with Image.open(out) as cropped:
         assert cropped.format == "WEBP"
         assert cropped.size == (1194, 670)
+
+
+@pytest.mark.skipif(not EXAMPLE.exists(), reason="showcase image not available")
+def test_cli_entry_point(tmp_path: Path, capfd: pytest.CaptureFixture[str]) -> None:
+    code = autocrop_rs.main([str(EXAMPLE), "--out", str(tmp_path)])
+    assert code == 0
+    assert (tmp_path / EXAMPLE.name).exists()
+    assert "box=Some((0, 822, 1194, 1492))" in capfd.readouterr().out
+    assert autocrop_rs.main(["--help"]) == 0
+    assert autocrop_rs.main([]) == 2
