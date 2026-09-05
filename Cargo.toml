@@ -7,6 +7,10 @@ description = "Detect and crop the content rectangle out of screenshots (letterb
 repository = "https://github.com/Nachtalb/autocrop-rs"
 publish = false
 
+[workspace]
+members = ["python"]
+default-members = ["."]
+
 [lib]
 name = "autocrop"
 path = "src/lib.rs"

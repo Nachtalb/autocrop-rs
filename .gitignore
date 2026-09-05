@@ -1,2 +1,8 @@
 target/
 out/
+python/.venv/
+python/*.pyd
+python/*.so
+__pycache__/
+.pytest_cache/
+.ruff_cache/

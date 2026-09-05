@@ -77,6 +77,10 @@ written by the Python harness (defaults: `../Samples` and
 estimate, the bar-trim result, the candidate lines and the full score
 breakdown of the best rectangle and of the ground-truth rectangle.
 
+From Python: the `python/` folder holds PyO3 bindings (`import autocrop_rs`)
+with `detect_file`, `detect_bytes`, `detect_array` (numpy) and `crop_file`;
+see `python/README.md`.
+
 From Rust:
 
 ```rust
