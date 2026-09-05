@@ -9,12 +9,12 @@ Finds the actual content inside a screenshot and crops away letterbox bars, app 
 ## Example
 
 A phone screenshot of a tweet with an embedded stream clip (1194 x 2560), the
-crop `autocrop` writes (1194 x 670), and a debug overlay showing the row and
-column profiles the detector works from together with the chosen box.
+detector's view of it (row and column profiles along the edges, the chosen
+box in red), and the crop `autocrop` writes (1194 x 670).
 
-| input | crop | debug overlay |
+| input | analysis | crop |
 |---|---|---|
-| <img src="https://raw.githubusercontent.com/Nachtalb/autocrop-rs/main/docs/example.jpg" width="220" alt="input"> | <img src="https://raw.githubusercontent.com/Nachtalb/autocrop-rs/main/docs/example_crop.jpg" width="220" alt="crop"> | <img src="https://raw.githubusercontent.com/Nachtalb/autocrop-rs/main/docs/example_debug.png" width="220" alt="debug overlay"> |
+| <img src="https://raw.githubusercontent.com/Nachtalb/autocrop-rs/main/docs/example.jpg" width="220" alt="input"> | <img src="https://raw.githubusercontent.com/Nachtalb/autocrop-rs/main/docs/example_debug.png" width="220" alt="analysis overlay"> | <img src="https://raw.githubusercontent.com/Nachtalb/autocrop-rs/main/docs/example_crop.jpg" width="220" alt="crop"> |
 
 ```
 $ uvx autocrop-rs example.jpg --out out --time
