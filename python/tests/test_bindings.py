@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import io
 from pathlib import Path
 
 import numpy as np
@@ -102,3 +103,42 @@ def test_file_bytes_and_crop_agree(tmp_path: Path) -> None:
 def test_missing_file_raises_oserror(tmp_path: Path) -> None:
     with pytest.raises(OSError):
         autocrop_rs.detect_file(tmp_path / "nope.jpg")
+
+
+@pytest.mark.skipif(not EXAMPLE.exists(), reason="showcase image not available")
+@pytest.mark.parametrize(
+    ("fmt", "magic"),
+    [("png", b"\x89PNG"), ("jpeg", b"\xff\xd8"), ("webp", b"RIFF")],
+)
+def test_crop_bytes_returns_encoded_crop(fmt: str, magic: bytes) -> None:
+    result, data = autocrop_rs.crop_bytes(EXAMPLE.read_bytes(), format=fmt, quality=85)
+    assert result.box == EXAMPLE_BOX
+    assert data is not None
+    assert data.startswith(magic)
+    with Image.open(io.BytesIO(data)) as cropped:
+        assert cropped.size == (1194, 670)
+
+
+def test_crop_bytes_returns_none_without_crop() -> None:
+    rng = np.random.default_rng(11)
+    noise = Image.fromarray(rng.integers(40, 220, size=(120, 160, 3), dtype=np.uint8))
+    buf = io.BytesIO()
+    noise.save(buf, format="PNG")
+    result, data = autocrop_rs.crop_bytes(buf.getvalue())
+    assert not result
+    assert data is None
+
+
+def test_crop_bytes_rejects_bad_format() -> None:
+    with pytest.raises(ValueError, match="unsupported format"):
+        autocrop_rs.crop_bytes(b"\x89PNG", format="tiff")
+
+
+@pytest.mark.skipif(not EXAMPLE.exists(), reason="showcase image not available")
+def test_crop_bytes_to_file(tmp_path: Path) -> None:
+    out = tmp_path / "crop.webp"
+    result = autocrop_rs.crop_bytes_to_file(EXAMPLE.read_bytes(), out)
+    assert result.box == EXAMPLE_BOX
+    with Image.open(out) as cropped:
+        assert cropped.format == "WEBP"
+        assert cropped.size == (1194, 670)

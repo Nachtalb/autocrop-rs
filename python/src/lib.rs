@@ -7,11 +7,11 @@
 
 use std::path::PathBuf;
 
-use autocrop::{Params, RgbImage, find_crop};
+use autocrop::{Encoding, Params, RgbImage, find_crop};
 use pyo3::buffer::PyBuffer;
 use pyo3::exceptions::{PyIOError, PyTypeError, PyValueError};
 use pyo3::prelude::*;
-use pyo3::types::PyDict;
+use pyo3::types::{PyBytes, PyDict};
 
 /// Generates the field-by-name setter and the dict export for `Params`.
 macro_rules! params_fields {
@@ -251,6 +251,76 @@ fn crop_file(
     Ok(to_result(result))
 }
 
+fn parse_encoding(format: &str, quality: u8) -> PyResult<Encoding> {
+    match format.to_ascii_lowercase().as_str() {
+        "png" => Ok(Encoding::Png),
+        "jpeg" | "jpg" => {
+            if !(1..=100).contains(&quality) {
+                return Err(PyValueError::new_err("quality must be in 1..=100"));
+            }
+            Ok(Encoding::Jpeg { quality })
+        }
+        "webp" => Ok(Encoding::WebPLossless),
+        other => Err(PyValueError::new_err(format!(
+            "unsupported format {other:?}; use \"png\", \"jpeg\" or \"webp\""
+        ))),
+    }
+}
+
+/// Detect on encoded image bytes and return the crop encoded as bytes.
+///
+/// Returns `(result, data)` where `data` is `None` when nothing should be cropped.
+/// `format` is `"png"` (default), `"jpeg"` (with `quality`) or `"webp"` (lossless).
+#[pyfunction]
+#[pyo3(signature = (data, format="png", quality=90, params=None))]
+fn crop_bytes<'py>(
+    py: Python<'py>,
+    data: &[u8],
+    format: &str,
+    quality: u8,
+    params: Option<&PyParams>,
+) -> PyResult<(PyCropResult, Option<Bound<'py, PyBytes>>)> {
+    let encoding = parse_encoding(format, quality)?;
+    let p = params_of(params);
+    let (result, encoded) = py
+        .detach(|| {
+            let img = decode_bytes(data)?;
+            let result = find_crop(&img, &p);
+            let encoded = match &result.rect {
+                Some(rect) => Some(img.crop(rect).encode(encoding)?),
+                None => None,
+            };
+            Ok::<_, ::image::ImageError>((result, encoded))
+        })
+        .map_err(image_error)?;
+    Ok((to_result(result), encoded.map(|b| PyBytes::new(py, &b))))
+}
+
+/// Detect on encoded image bytes and write the crop to `out_path` (format by extension).
+///
+/// Returns the detection result; nothing is written when `box` is `None`.
+#[pyfunction]
+#[pyo3(signature = (data, out_path, params=None))]
+fn crop_bytes_to_file(
+    py: Python<'_>,
+    data: &[u8],
+    out_path: PathBuf,
+    params: Option<&PyParams>,
+) -> PyResult<PyCropResult> {
+    let p = params_of(params);
+    let result = py
+        .detach(|| {
+            let img = decode_bytes(data)?;
+            let result = find_crop(&img, &p);
+            if let Some(rect) = &result.rect {
+                img.crop(rect).save(&out_path)?;
+            }
+            Ok::<_, ::image::ImageError>(result)
+        })
+        .map_err(image_error)?;
+    Ok(to_result(result))
+}
+
 /// Native module entry point.
 #[pymodule]
 fn autocrop_rs(m: &Bound<'_, PyModule>) -> PyResult<()> {
@@ -260,6 +330,8 @@ fn autocrop_rs(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(detect_bytes, m)?)?;
     m.add_function(wrap_pyfunction!(detect_array, m)?)?;
     m.add_function(wrap_pyfunction!(crop_file, m)?)?;
+    m.add_function(wrap_pyfunction!(crop_bytes, m)?)?;
+    m.add_function(wrap_pyfunction!(crop_bytes_to_file, m)?)?;
     m.add("__version__", env!("CARGO_PKG_VERSION"))?;
     Ok(())
 }

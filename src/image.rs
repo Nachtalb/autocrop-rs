@@ -7,6 +7,20 @@ use crate::geometry::Rect;
 /// An RGB colour.
 pub type Color = [u8; 3];
 
+/// Output format for [`RgbImage::encode`].
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Encoding {
+    /// Lossless PNG.
+    Png,
+    /// JPEG at the given quality (1..=100).
+    Jpeg {
+        /// Encoder quality.
+        quality: u8,
+    },
+    /// Lossless WebP (the `image` crate has no lossy WebP encoder).
+    WebPLossless,
+}
+
 /// A packed 8-bit RGB image in row-major order.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct RgbImage {
@@ -80,6 +94,32 @@ impl RgbImage {
             .map(|c| [c[0], c[1], c[2]])
             .collect();
         Ok(Self::new(w, h, pixels))
+    }
+
+    /// Encode into memory.
+    ///
+    /// # Errors
+    /// Any encoding error from the `image` crate.
+    pub fn encode(&self, encoding: Encoding) -> Result<Vec<u8>, ::image::ImageError> {
+        use ::image::{ExtendedColorType, ImageEncoder};
+        let raw: Vec<u8> = self.pixels.iter().flatten().copied().collect();
+        let (w, h) = (self.width as u32, self.height as u32);
+        let mut out = Vec::new();
+        match encoding {
+            Encoding::Png => ::image::codecs::png::PngEncoder::new(&mut out).write_image(
+                &raw,
+                w,
+                h,
+                ExtendedColorType::Rgb8,
+            )?,
+            Encoding::Jpeg { quality } => {
+                ::image::codecs::jpeg::JpegEncoder::new_with_quality(&mut out, quality)
+                    .write_image(&raw, w, h, ExtendedColorType::Rgb8)?;
+            }
+            Encoding::WebPLossless => ::image::codecs::webp::WebPEncoder::new_lossless(&mut out)
+                .write_image(&raw, w, h, ExtendedColorType::Rgb8)?,
+        }
+        Ok(out)
     }
 
     /// Encode to a file; the format follows the extension.
@@ -240,6 +280,20 @@ mod tests {
         assert!((scale - 0.625).abs() < 1e-12);
         assert_eq!(small.get(10, 100), [0, 0, 0]);
         assert_eq!(small.get(790, 100), [200, 100, 0]);
+    }
+
+    #[test]
+    fn encode_roundtrips_through_png_and_webp() {
+        let mut img = RgbImage::solid(20, 10, [10, 20, 30]);
+        img.pixels[25] = [200, 100, 0];
+        let flat: Vec<u8> = img.pixels.iter().flatten().copied().collect();
+        for enc in [Encoding::Png, Encoding::WebPLossless] {
+            let bytes = img.encode(enc).expect("encode");
+            let back = ::image::load_from_memory(&bytes).expect("decode").to_rgb8();
+            assert_eq!(back.as_raw(), &flat);
+        }
+        let jpeg = img.encode(Encoding::Jpeg { quality: 90 }).expect("encode");
+        assert!(jpeg.starts_with(&[0xFF, 0xD8]));
     }
 
     #[test]

@@ -2,7 +2,7 @@
 
 from collections.abc import Buffer
 from os import PathLike
-from typing import Any
+from typing import Any, Literal
 
 __version__: str
 
@@ -40,3 +40,19 @@ def crop_file(
     path: str | PathLike[str], out_path: str | PathLike[str], params: Params | None = None
 ) -> CropResult:
     """Detect and, when a crop is found, write the cropped image to ``out_path``."""
+
+def crop_bytes(
+    data: bytes,
+    format: Literal["png", "jpeg", "jpg", "webp"] = "png",
+    quality: int = 90,
+    params: Params | None = None,
+) -> tuple[CropResult, bytes | None]:
+    """Detect on encoded image bytes and return ``(result, encoded crop or None)``.
+
+    ``"jpeg"`` honours ``quality``; ``"webp"`` is lossless.
+    """
+
+def crop_bytes_to_file(
+    data: bytes, out_path: str | PathLike[str], params: Params | None = None
+) -> CropResult:
+    """Detect on encoded image bytes and write the crop to ``out_path`` (format by extension)."""

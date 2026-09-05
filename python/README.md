@@ -12,6 +12,7 @@ Rust toolchain required (the extension is compiled on install):
 cd python
 uv sync            # builds the extension into the venv via maturin
 uv run pytest
+uv sync --reinstall-package autocrop-rs   # after changing Rust code (uv caches the build)
 ```
 
 To build a wheel: `uv run maturin build --release`. The wheel is abi3 for
@@ -40,6 +41,11 @@ result = autocrop_rs.detect_array(np.asarray(Image.open("screenshot.jpg").conver
 
 # Detect and write the crop in one call (format by extension); writes nothing when box is None
 autocrop_rs.crop_file("screenshot.jpg", "out/screenshot.png")
+
+# Bytes in, bytes out: no decoding or re-encoding on the Python side
+result, png = autocrop_rs.crop_bytes(data)  # PNG by default
+result, jpg = autocrop_rs.crop_bytes(data, format="jpeg", quality=85)
+result = autocrop_rs.crop_bytes_to_file(data, "out/screenshot.webp")  # format by extension
 
 # Thresholds
 params = autocrop_rs.Params(accept_score=0.5)

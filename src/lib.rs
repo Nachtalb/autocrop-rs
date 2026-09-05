@@ -28,5 +28,5 @@ pub mod profiles;
 
 pub use detector::{Analysis, CropResult, analyze, crop_image, find_crop};
 pub use geometry::{Rect, iou};
-pub use image::RgbImage;
+pub use image::{Encoding, RgbImage};
 pub use params::Params;
