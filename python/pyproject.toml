@@ -8,10 +8,21 @@ version = "0.1.0"
 description = "Python bindings for the autocrop screenshot content-rectangle detector (Rust)."
 readme = "README.md"
 requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Nachtalb" }]
+keywords = ["image", "crop", "screenshot", "detection"]
 classifiers = [
     "Programming Language :: Rust",
+    "Programming Language :: Python :: 3",
     "Programming Language :: Python :: Implementation :: CPython",
+    "Topic :: Multimedia :: Graphics",
 ]
+
+[project.urls]
+Homepage = "https://github.com/Nachtalb/autocrop-rs"
+Repository = "https://github.com/Nachtalb/autocrop-rs"
+Issues = "https://github.com/Nachtalb/autocrop-rs/issues"
 
 [tool.maturin]
 features = ["pyo3/extension-module"]

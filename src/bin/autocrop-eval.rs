@@ -1,8 +1,8 @@
 //! `autocrop-eval`: run the detector over the labelled sample set and report metrics.
 //!
-//! Ground-truth boxes come from the JSON file written by the Python harness
-//! (`autocrop-eval` in the reference implementation), so both implementations
-//! are measured against exactly the same targets.
+//! Ground-truth boxes (`eval/ground_truth.json`) were recovered by template
+//! matching the manual crops into the originals; the Python prototype used the
+//! same file, so both implementations are measured against identical targets.
 
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
@@ -31,13 +31,9 @@ struct Args {
 
 fn parse_args() -> Result<Args, lexopt::Error> {
     use lexopt::prelude::*;
-    let here = std::env::current_dir().unwrap_or_default();
+    let here = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let mut samples = here.join("..").join("Samples");
-    let mut ground_truth = here
-        .join("..")
-        .join("autocrop")
-        .join("out")
-        .join("ground_truth.json");
+    let mut ground_truth = here.join("eval").join("ground_truth.json");
     let mut explain = Vec::new();
     let mut parser = lexopt::Parser::from_env();
     while let Some(arg) = parser.next()? {

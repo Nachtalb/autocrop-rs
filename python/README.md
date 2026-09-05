@@ -15,10 +15,9 @@ uv run pytest
 uv sync --reinstall-package autocrop-rs   # after changing Rust code (uv caches the build)
 ```
 
-To build a wheel: `uv run maturin build --release`. The wheel is abi3 for
-CPython 3.11 and newer. Note that the workspace's `.cargo/config.toml` adds
-`-C target-cpu=native`; delete it or override `build.rustflags` before
-building wheels meant for other machines.
+Released wheels are on PyPI: `pip install autocrop-rs` (or `uv add
+autocrop-rs`). To build one locally: `uv run maturin build --release`. The
+wheel is abi3 for CPython 3.11 and newer.
 
 ## Usage
 

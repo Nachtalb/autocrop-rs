@@ -5,7 +5,10 @@ edition = "2024"
 rust-version = "1.85"
 description = "Detect and crop the content rectangle out of screenshots (letterbox bars, app chrome, meme text)."
 repository = "https://github.com/Nachtalb/autocrop-rs"
-publish = false
+license = "MIT"
+keywords = ["image", "crop", "screenshot", "detection", "vision"]
+categories = ["multimedia::images", "computer-vision", "command-line-utilities"]
+exclude = ["docs/", "python/", ".github/", "out/", "RELEASING.md"]
 
 [workspace]
 members = ["python"]

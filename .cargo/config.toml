@@ -1,4 +1,0 @@
-# Native CPU instructions for every build made from this checkout.
-# The resulting binaries only run on CPUs at least as new as the build machine.
-[build]
-rustflags = ["-C", "target-cpu=native"]

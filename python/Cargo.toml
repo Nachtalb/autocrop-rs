@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2024"
 rust-version = "1.85"
 description = "Python bindings for the autocrop screenshot content-rectangle detector."
+license = "MIT"
 publish = false
 
 [lib]
