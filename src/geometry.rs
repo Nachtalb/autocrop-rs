@@ -80,7 +80,7 @@ mod tests {
     fn iou_of_identical_and_disjoint() {
         let a = Rect::new(0, 0, 10, 10);
         assert!((iou(&a, &a) - 1.0).abs() < 1e-12);
-        assert_eq!(iou(&a, &Rect::new(20, 20, 30, 30)), 0.0);
+        assert!(iou(&a, &Rect::new(20, 20, 30, 30)).abs() < f64::EPSILON);
         let half = Rect::new(0, 0, 10, 5);
         assert!((iou(&a, &half) - 0.5).abs() < 1e-12);
     }
