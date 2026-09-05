@@ -19,11 +19,16 @@ path = "src/bin/autocrop.rs"
 name = "autocrop-eval"
 path = "src/bin/autocrop-eval.rs"
 
+[[example]]
+name = "decode_bench"
+required-features = ["turbojpeg"]
+
 [dependencies]
 image = { version = "0.25", default-features = false, features = ["jpeg", "png", "webp", "gif", "bmp"] }
 lexopt = "0.3"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+turbojpeg = { version = "1.5", default-features = false, features = ["cmake", "require-simd"], optional = true }
 
 [profile.release]
 opt-level = 3
@@ -52,3 +57,6 @@ module_name_repetitions = "allow"
 similar_names = "allow"
 many_single_char_names = "allow"
 too_many_lines = "allow"
+
+[features]
+turbojpeg = ["dep:turbojpeg"]

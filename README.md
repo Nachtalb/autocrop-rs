@@ -117,3 +117,12 @@ the area-averaging downscale being implemented independently.
 
 Quality gate: `cargo fmt --check`, `cargo clippy --all-targets` (pedantic,
 warning free), `cargo test`.
+
+`examples/decode_bench.rs` compares the `image` crate's decoders with
+libjpeg-turbo, including its DCT-domain 1/2, 1/4 and 1/8 scaled decode, and
+runs the detector on each output. It needs the optional `turbojpeg` feature,
+which builds libjpeg-turbo from source (cmake, nasm and a C compiler):
+
+```
+cargo run --release --features turbojpeg --example decode_bench -- FILE...
+```
