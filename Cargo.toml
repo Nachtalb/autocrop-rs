@@ -1,0 +1,54 @@
+[package]
+name = "autocrop"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+description = "Detect and crop the content rectangle out of screenshots (letterbox bars, app chrome, meme text)."
+repository = "https://github.com/Nachtalb/autocrop-rs"
+publish = false
+
+[lib]
+name = "autocrop"
+path = "src/lib.rs"
+
+[[bin]]
+name = "autocrop"
+path = "src/bin/autocrop.rs"
+
+[[bin]]
+name = "autocrop-eval"
+path = "src/bin/autocrop-eval.rs"
+
+[dependencies]
+image = { version = "0.25", default-features = false, features = ["jpeg", "png", "webp", "gif", "bmp"] }
+lexopt = "0.3"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+strip = true
+debug = false
+incremental = false
+
+[profile.test]
+opt-level = 2
+
+[lints.rust]
+unsafe_code = "forbid"
+missing_docs = "warn"
+
+[lints.clippy]
+all = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+cast_precision_loss = "allow"
+cast_possible_truncation = "allow"
+cast_sign_loss = "allow"
+cast_possible_wrap = "allow"
+module_name_repetitions = "allow"
+similar_names = "allow"
+many_single_char_names = "allow"
+too_many_lines = "allow"
