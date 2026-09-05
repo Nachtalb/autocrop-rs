@@ -1,8 +1,27 @@
 # autocrop-rs
 
-Python bindings for the `autocrop` screenshot content-rectangle detector,
-built with PyO3 and maturin. The package installs as `autocrop-rs` and
-imports as `autocrop_rs`.
+[![PyPI](https://img.shields.io/pypi/v/autocrop-rs.svg)](https://pypi.org/project/autocrop-rs/)
+[![crates.io](https://img.shields.io/crates/v/autocrop.svg)](https://crates.io/crates/autocrop)
+[![CI](https://github.com/Nachtalb/autocrop-rs/actions/workflows/ci.yml/badge.svg)](https://github.com/Nachtalb/autocrop-rs/actions/workflows/ci.yml)
+
+Finds the actual content inside a screenshot and crops away letterbox bars, app chrome and meme text, while leaving photos, art and manga pages untouched. Python bindings for the Rust [`autocrop`](https://github.com/Nachtalb/autocrop-rs) crate: the package installs as `autocrop-rs`, imports as `autocrop_rs` and ships the command line as `uvx autocrop-rs`.
+
+## Example
+
+A phone screenshot of a tweet with an embedded stream clip (1194 x 2560), the
+crop `autocrop` writes (1194 x 670), and a debug overlay showing the row and
+column profiles the detector works from together with the chosen box.
+
+| input | crop | debug overlay |
+|---|---|---|
+| <img src="https://raw.githubusercontent.com/Nachtalb/autocrop-rs/main/docs/example.jpg" width="220" alt="input"> | <img src="https://raw.githubusercontent.com/Nachtalb/autocrop-rs/main/docs/example_crop.jpg" width="220" alt="crop"> | <img src="https://raw.githubusercontent.com/Nachtalb/autocrop-rs/main/docs/example_debug.png" width="220" alt="debug overlay"> |
+
+```
+$ uvx autocrop-rs example.jpg --out out --time
+example.jpg: chrome score=0.86 box=Some((0, 822, 1194, 1492))
+  decode 16.6 ms, detect 11.0 ms (1194x2560)
+```
+
 
 ## Build and test
 

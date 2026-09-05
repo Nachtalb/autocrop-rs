@@ -14,7 +14,7 @@ column profiles the detector works from together with the chosen box.
 
 | input | crop | debug overlay |
 |---|---|---|
-| <img src="docs/example.jpg" width="220" alt="input"> | <img src="docs/example_crop.jpg" width="220" alt="crop"> | <img src="docs/example_debug.png" width="220" alt="debug overlay"> |
+| <img src="https://raw.githubusercontent.com/Nachtalb/autocrop-rs/main/docs/example.jpg" width="220" alt="input"> | <img src="https://raw.githubusercontent.com/Nachtalb/autocrop-rs/main/docs/example_crop.jpg" width="220" alt="crop"> | <img src="https://raw.githubusercontent.com/Nachtalb/autocrop-rs/main/docs/example_debug.png" width="220" alt="debug overlay"> |
 
 ```
 $ autocrop docs/example.jpg --out out --time

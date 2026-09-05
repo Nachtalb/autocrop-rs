@@ -1,6 +1,6 @@
 [package]
 name = "autocrop"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 rust-version = "1.85"
 description = "Detect and crop the content rectangle out of screenshots (letterbox bars, app chrome, meme text)."
