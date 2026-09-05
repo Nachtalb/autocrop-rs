@@ -14,6 +14,10 @@
 //! }
 //! ```
 
+// The optional dependency is only used by `examples/decode_bench.rs`.
+#[cfg(feature = "turbojpeg")]
+use turbojpeg as _;
+
 pub mod chrome;
 pub mod detector;
 pub mod geometry;
